@@ -51,4 +51,23 @@ jobs:
           git config user.email github-actions@github.com
           git add .
           git commit -m "update pot-file"
-          git push
+
+          # do a 5 push retries in case weblate just pushed to the repository
+          # push from weblate could happen easily because webhook updates the translations
+          RETRIES=6
+          DELAY=2
+          COUNT=1
+          while [ $COUNT -lt $RETRIES ]; do
+            git pull --rebase
+            git push
+            if [ $? -eq 0 ]; then
+              break
+            fi
+            let COUNT=$COUNT+1
+            sleep $DELAY
+          done
+
+          # retries were not successful
+          if $COUNT -eq $RETRIES; then
+            exit 1
+          fi
